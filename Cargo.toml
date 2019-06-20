@@ -1,0 +1,8 @@
+[package]
+name = "whispers-futures"
+version = "0.1.0"
+authors = ["Jay Oster <jay@kodewerx.com>"]
+edition = "2018"
+
+[dependencies]
+futures-preview = "0.3.0-alpha.16"
