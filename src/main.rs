@@ -1,5 +1,6 @@
 use futures::channel::oneshot;
 use futures::executor::LocalPool;
+use futures::future::join_all;
 use futures::task::SpawnExt;
 use futures::FutureExt;
 
@@ -11,6 +12,7 @@ fn main() -> Result<(), error::Error> {
 
     let mut pool = LocalPool::new();
     let mut spawner = pool.spawner();
+    let mut futures = Vec::with_capacity(N);
     let (mut left_tx, leftmost_rx) = oneshot::channel();
 
     // Spawn a future to print the end result
@@ -19,9 +21,13 @@ fn main() -> Result<(), error::Error> {
     // Spawn a ton of futures that whisper across the chain
     for _ in 0..N {
         let (right_tx, right_rx) = oneshot::channel();
-        spawner.spawn(whisper::Whisper::new(left_tx, right_rx))?;
+        futures.push(whisper::Whisper::new(left_tx, right_rx));
         left_tx = right_tx;
     }
+
+    // Spawn an ordered list of futures
+    futures.reverse();
+    spawner.spawn(join_all(futures).map(|_| ()))?;
 
     // Start the chain of whispers
     left_tx.send(1)?;
